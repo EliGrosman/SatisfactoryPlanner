@@ -75,8 +75,6 @@ with st.container():
         alt_item_val = st.selectbox(label="Alt recipe", options=list(altRecipes.keys()), key=f"alt{i}")
         alt_recipes_selected.append(alt_item_val)
 
-st.markdown("## Ingredients")
-ingredients_txt = st.markdown("")
 
 Submit = st.button("Go", on_click=run)
 
