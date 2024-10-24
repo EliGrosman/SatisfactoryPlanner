@@ -52,7 +52,7 @@ class RecipeLoader():
                     elif len(inp[0].baseRecipes) > 0:
                         use_recipe = inp[0].baseRecipes[0]
                     else:
-                        return
+                        continue
                     
                     # keep going deeper to get ingreds for ingredients that need to be crafted. i.e. not raw materials
                     self.get_ings(inp[0], inp[2] * out_scalar, use_recipe, ings, machs, maxL, alt_recipes, l+1)

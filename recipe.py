@@ -52,10 +52,11 @@ class Recipe():
         self.outputs: Union[Item, float, float] = outs
         self.inputs: Union[Item, float, float] = ins
 
-        if self.type == "base" and self.recipeName == self.outputs[0][0].itemName:
+        if self.type == "base":
             for output in self.outputs:
                 out: Item = output[0]
-                ITEMS[out.itemName].baseRecipes.append(self)
+                if self.recipeName == out.itemName:
+                    ITEMS[out.itemName].baseRecipes.append(self)
         else:
             for output in self.outputs:
                 out: Item = output[0]
