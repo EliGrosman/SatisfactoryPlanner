@@ -98,8 +98,12 @@ def calculate_and_display_results(
     # Aggregate ingredients
     aggregated_ingredients = defaultdict(float)
     for item, amount in all_ingredients:
-        if(item._is_base_ingredient()):
             aggregated_ingredients[item] += amount
+
+    base_ingredients = defaultdict(float)
+    for item, amount in all_ingredients:
+        if(item._is_base_ingredient()):
+            base_ingredients[item] += amount
 
     # Aggregate machines
     aggregated_machines = defaultdict(lambda: (0, ""))
@@ -121,7 +125,11 @@ def calculate_and_display_results(
         aggregated_ingredients.items(), key=lambda item: (-item[1], item[0].itemName)
     )  # Sort ingredients by amount (descending) then by name (ascending)
 
-    print(aggregated_machines)
+    sorted_base_ingredients = sorted(
+        base_ingredients.items(), key=lambda item: (-item[1], item[0].itemName)
+    )  # Sort ingredients by amount (descending) then by name (ascending)
+
+
     sorted_machines = sorted(
         aggregated_machines.items(),
         key=lambda item: (item[1][1].machineName, item[0].recipeName, item[1][0]),
@@ -133,7 +141,27 @@ def calculate_and_display_results(
 
     # --- Display Results (Right Column) ---
     with ingredients_col:
-        st.markdown("## Base ingredients:")
+        st.markdown("## Ingredients:")
+        
+        st.markdown("### Base Ingredients")
+        # --- Display Ingredients in a table ---
+        ingredients_html = """
+        <table>
+            <thead>
+                <tr>
+                    <th>Ingredient</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+        """
+        for ingredient, amount in sorted_base_ingredients:
+            ingredients_html += f"<tr><td>{ingredient.itemName}</td><td>{amount:.2f}</td></tr>"
+        ingredients_html += "</tbody></table>"
+        st.markdown(ingredients_html, unsafe_allow_html=True)  # Render as HTML
+
+
+        st.markdown("### All ingredients:")
         
         # --- Display Ingredients in a table ---
         ingredients_html = """
