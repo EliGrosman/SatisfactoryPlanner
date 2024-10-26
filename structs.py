@@ -39,6 +39,9 @@ class Item:
     
     def _is_base_ingredient(self):
         return len(self.baseRecipes) == 0
+    
+    def __repr__(self) -> str:
+        return f"Item(itemName='{self.itemName}')" 
 
 class Machine:
     """
@@ -52,6 +55,9 @@ class Machine:
 
     def __str__(self) -> str:
         return self.machineName
+    
+    def __repr__(self) -> str:
+        return f"Machine(machineName='{self.machineName}')" 
 
 
 class Recipe:
@@ -86,6 +92,9 @@ class Recipe:
         ]
 
         self._add_recipe_to_items()
+
+    def __repr__(self) -> str:
+        return f"Recipe(recipeName='{self.recipeName}')" 
 
     def _get_or_create_machine(self, machineName: str) -> Machine:
         """Retrieves a machine from MACHINES or creates a new one if it doesn't exist."""
