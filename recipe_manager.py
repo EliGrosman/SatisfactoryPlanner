@@ -158,16 +158,20 @@ class RecipeManager:
         all_ingredients = []
         all_machines = []
 
-        for output_item_name, output_amount in output_items:
-            item = self.RECIPES[output_item_name].outputs[0].item  # Get the Item object
-            recipe = alt_recipes_dict.get(item, item.baseRecipes[0])
+        for (output_item_name, output_amount) in output_items:
+            item = self.ITEMS[output_item_name]  # Get the Item object           
 
-            ingredients, machines = self.get_ingredients(
-                item=item,
-                amount=output_amount,
-                recipe=recipe,
-                alt_recipes=alt_recipes_dict,
-            )
+            if item._is_base_ingredient():
+                ingredients = [(item, output_amount)]
+                machines = []
+            else:
+                recipe = alt_recipes_dict.get(item, item.baseRecipes[0])
+                ingredients, machines = self.get_ingredients(
+                    item=item,
+                    amount=output_amount,
+                    recipe=recipe,
+                    alt_recipes=alt_recipes_dict,
+                )
 
             all_ingredients.extend(ingredients)
             all_machines.extend(machines)
@@ -197,23 +201,6 @@ class RecipeManager:
                 total_machines[machine][1] + max(1, math.floor(usage)),
             )
 
-        # --- Sort Results ---
-        sorted_ingredients = sorted(
-            aggregated_ingredients.items(), key=lambda item: (-item[1], item[0].itemName)
-        )  # Sort ingredients by amount (descending) then by name (ascending)
+        
 
-        sorted_base_ingredients = sorted(
-            base_ingredients.items(), key=lambda item: (-item[1], item[0].itemName)
-        )  # Sort ingredients by amount (descending) then by name (ascending)
-
-
-        sorted_machines = sorted(
-            aggregated_machines.items(),
-            key=lambda item: (item[1][1].machineName, item[0].recipeName, item[1][0]),
-        )  # Sort machines by machine name, then recipe, then usage
-
-        sorted_total_machines = sorted(
-            total_machines.items(), key=lambda item: item[0].machineName
-        ) # Sort total machines by machine name
-
-        return sorted_ingredients, sorted_base_ingredients, sorted_machines, sorted_total_machines
+        return aggregated_ingredients, base_ingredients, aggregated_machines, total_machines
