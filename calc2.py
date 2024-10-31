@@ -1,98 +1,7 @@
 import streamlit as st
 from collections import defaultdict
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from recipe_manager import RecipeManager
-from scipy.optimize import linprog
-
-def get_diff(recipeManager: RecipeManager, items: List[Tuple[str, float]], alt_recipes: List[str], output_items: List[str]):
-        if len(items) == 0 or len(output_items) == 0:
-             return None, None, None
-        output_ings = defaultdict(lambda: defaultdict(1))
-        all_base_items = []
-        all_items = []
-        max_outputs = [v for i, v in output_items]
-        for output_item, _ in output_items:
-                aggregated_ingredients, out_base_items,   _, _ = recipeManager.calculate_and_display_results([(output_item, 1)], alt_recipes)
-                output_ings[output_item] = out_base_items
-                all_items.extend(aggregated_ingredients.keys())
-                all_base_items.extend(out_base_items.keys())
-        all_base_items = set(all_base_items)
-
-        # inputs = [(i[0], i[1]) for i in items if recipeManager.ITEMS[i[0]] in all_items]
-        base_items = [(i[0], i[1]) for i in items if recipeManager.ITEMS[i[0]]._is_base_ingredient()]
-        non_base_items = [(i[0], i[1]) for i in items if not recipeManager.ITEMS[i[0]]._is_base_ingredient()]
-
-        _, base_ings,          _, _ = recipeManager.calculate_and_display_results(base_items, alt_recipes)
-        _, non_base_base_ings, _, _ = recipeManager.calculate_and_display_results(non_base_items, alt_recipes)
-        coeffs = {}
-
-        for out_item in output_ings.keys():
-                coeffs[out_item] = [output_ings[out_item].get(item, 0) for item in all_base_items] 
-
-        input_amounts = []
-        for key in all_base_items:
-                base_ings.setdefault(key, 0)
-                non_base_base_ings.setdefault(key, 0)
-
-                input_amounts.append(base_ings[key] + non_base_base_ings[key])
-
-        q = []
-        modified_inputs = input_amounts.copy()
-        for item, rates in coeffs.items():
-            qs = [x_j / max(1e-10,a_ij) for x_j, a_ij in zip(input_amounts, rates)]
-            q_i = min([x for x in qs if x > 0])
-
-            for i in range(len(input_amounts)):
-                if modified_inputs[i] == 0:
-                    modified_inputs[i] = rates[i] * q_i
-            q.append(q_i)
-
-
-        # Objective function: Maximize q_1 + q_2 + ... + q_n
-        c = [-1] * len(coeffs)  # Negate for maximization
-
-        # Inequality constraints: a_{1j}q_1 + a_{2j}q_2 + ... + a_{nj}q_n <= x_j for all j
-        A_ub = []
-        b_ub = []
-        for j, x_j in enumerate(modified_inputs):
-            row = [coeffs[item][j] for item in coeffs]
-            A_ub.append(row)
-            b_ub.append(x_j)
-
-        # Add constraints for q_i >= min_output for all i
-        for i in range(len(coeffs)):
-            row = [0] * len(coeffs)
-            row[i] = 1  # Coefficient for q_i
-            A_ub.append(row)
-            if max_outputs[i] > 0:
-                b_ub.append(max_outputs[i]) 
-            else:
-                 b_ub.append(1e20) 
-
-        # Bounds: q_i >= 0 for all i
-        bounds = [(0, None) for _ in range(len(coeffs))]
-
-        # Solve the linear program
-        result = linprog(c, A_ub=A_ub, b_ub=b_ub, bounds=bounds, method='highs')
-
-        # Extract the optimal q_i values
-        optimal_outputs = result.x
-        if optimal_outputs is None:
-             return [], [], None
-        
-        output = dict(zip([x[0] for x in output_items], optimal_outputs.tolist()))
-        output = [(k, v) for k, v in output.items()]
-    
-        _, output_base_ings,   _, _ = recipeManager.calculate_and_display_results(output, alt_recipes)
-        
-        diff = {}
-        for item in base_ings:
-                diff[item] = base_ings[item] - output_base_ings[item]
-        
-        remaining = {k: v for k, v in diff.items() if v >= 0}
-        needed = {k: -v for k, v in diff.items() if v < 0}
-
-        return remaining, needed, output
 
 recipeManager = RecipeManager()
 alt_recipes = recipeManager.get_recipes_by_type("alternate")
@@ -148,7 +57,7 @@ with input_col:
         alt_recipes_selected.append(alt_item_val)
 
     with diff_col:
-        remaining, needed, output = get_diff(recipeManager, input_items, alt_recipes_selected, output_items)
+        remaining, needed, output = recipeManager.optimize(input_items, alt_recipes_selected, output_items)
         if output is None:
             st.markdown("## Not possible")
         else:
