@@ -62,9 +62,12 @@ def get_diff(recipeManager: RecipeManager, items: List[Tuple[str, float]], alt_r
         # Add constraints for q_i >= min_output for all i
         for i in range(len(coeffs)):
             row = [0] * len(coeffs)
-            row[i] = -1  # Coefficient for q_i
+            row[i] = 1  # Coefficient for q_i
             A_ub.append(row)
-            b_ub.append(max_outputs[i]) 
+            if max_outputs[i] > 0:
+                b_ub.append(max_outputs[i]) 
+            else:
+                 b_ub.append(1e20) 
 
         # Bounds: q_i >= 0 for all i
         bounds = [(0, None) for _ in range(len(coeffs))]
