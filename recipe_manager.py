@@ -235,10 +235,10 @@ class RecipeManager:
         output_ingredients = defaultdict(lambda: defaultdict(float)) 
         all_base_items = set()
         all_items = set()
-        max_outputs = [max_output for _, max_output in output_items]
-
+        max_outputs = [max_output for _, _, max_output in output_items]
+        min_outputs = [min_output for _, min_output, _ in output_items]
         # Calculate base ingredients for each output item
-        for output_item, _ in output_items:
+        for output_item, _, _ in output_items:
             aggregated_ingredients, out_base_items, _, _ = \
                 self.calculate_and_display_results([(output_item, 1)], alt_recipes)
             output_ingredients[output_item] = out_base_items
@@ -277,7 +277,6 @@ class RecipeManager:
                 if modified_inputs[i] == 0:
                     modified_inputs[i] = rates[i] * q_i
             q.append(q_i)
-
         # Objective function: Maximize weighted sum of output items
         c = [-1 for i in coeffs]  # Negate for maximization
 
@@ -294,7 +293,13 @@ class RecipeManager:
             row = [0] * len(coeffs)
             row[i] = 1  # Coefficient for q_i
             A_ub.append(row)
-            b_ub.append(max_outputs[i])  # No negation needed for <= constraint
+            b_ub.append(max_outputs[i] if max_outputs[i] > 0 else 1e20)  # No negation needed for <= constraint
+
+            # Constraint for O_i >= min_output
+            row = [0] * len(coeffs)
+            row[i] = -1  # Coefficient for O_i
+            A_ub.append(row)
+            b_ub.append(-min_outputs[i])  # Negate for >= constraint
 
         # Bounds: q_i >= 0 for all i
         bounds = [(0, None) for _ in range(len(coeffs))]

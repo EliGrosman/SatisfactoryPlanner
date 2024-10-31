@@ -34,16 +34,20 @@ with input_col:
 
     output_items = []
     for i in range(num_inputs):
-        out_item_col, out_min_col = st.columns([0.75, 0.25])
+        out_item_col, out_min_col, out_max_col = st.columns([0.75, 0.125, 0.125])
 
         out_item_val = out_item_col.selectbox(
             label="Item", options=list(recipeManager.ITEMS.keys()), key=f"out{i}"
         )
 
         out_min_val = out_min_col.number_input(
-            label="Maximum amount", min_value=0.0, step=1.0, key=f"out{i} {i}"
+            label="Min", min_value=0.0, step=1.0, key=f"out{i} {i}"
         )
-        output_items.append((out_item_val, out_min_val))
+
+        out_max_val = out_max_col.number_input(
+            label="Max", min_value=0.0, step=1.0, key=f"out{i} {i} {i}"
+        )
+        output_items.append((out_item_val, out_min_val, out_max_val))
 
     st.markdown("## Alt recipes")
     num_alt_recipes = st.number_input(
@@ -59,7 +63,7 @@ with input_col:
     with diff_col:
         remaining, needed, output = recipeManager.optimize(input_items, alt_recipes_selected, output_items)
         if output is None:
-            st.markdown("## Not possible")
+            st.markdown("## Invalid input")
         else:
             st.markdown("## Inputs")
 
@@ -94,7 +98,7 @@ with input_col:
                 <tbody>
             """
             for ingredient, amount in remaining.items():
-                ingredients_html += f"<tr><td>{ingredient.itemName}</td><td>{amount:.2f}</td></tr>"
+                ingredients_html += f"<tr><td>{ingredient}</td><td>{amount:.2f}</td></tr>"
             ingredients_html += "</tbody></table>"
             st.markdown(ingredients_html, unsafe_allow_html=True)  # Render as HTML
 
