@@ -1,7 +1,7 @@
 [[pages]]
-path = "pages/calc1.py"
+path = "calc1.py"
 name = "Factory Planner"
 
 [[pages]]
-path = "pages/calc2.py"
+path = "calc2.py"
 name = "Output Optimizer"
