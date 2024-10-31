@@ -10,7 +10,7 @@ def get_diff(recipeManager: RecipeManager, items: List[Tuple[str, float]], alt_r
         output_ings = defaultdict(lambda: defaultdict(1))
         all_base_items = []
         all_items = []
-        min_outputs = [v for i, v in output_items]
+        max_outputs = [v for i, v in output_items]
         for output_item, _ in output_items:
                 aggregated_ingredients, out_base_items,   _, _ = recipeManager.calculate_and_display_results([(output_item, 1)], alt_recipes)
                 output_ings[output_item] = out_base_items
@@ -64,7 +64,7 @@ def get_diff(recipeManager: RecipeManager, items: List[Tuple[str, float]], alt_r
             row = [0] * len(coeffs)
             row[i] = -1  # Coefficient for q_i
             A_ub.append(row)
-            b_ub.append(-min_outputs[i])  # Negate for >= constraint
+            b_ub.append(max_outputs[i]) 
 
         # Bounds: q_i >= 0 for all i
         bounds = [(0, None) for _ in range(len(coeffs))]
@@ -129,7 +129,7 @@ with input_col:
         )
 
         out_min_val = out_min_col.number_input(
-            label="Minimum amount", min_value=0.0, step=1.0, key=f"out{i} {i}"
+            label="Maximum amount", min_value=0.0, step=1.0, key=f"out{i} {i}"
         )
         output_items.append((out_item_val, out_min_val))
 
