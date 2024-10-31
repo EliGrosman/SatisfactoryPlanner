@@ -1,8 +1,7 @@
 import streamlit as st
 from collections import defaultdict
 from typing import List, Tuple
-from recipemanager import RecipeManager
-from structs import Item, Recipe
+from recipe_manager import RecipeManager
 import math
 st.set_page_config(layout="wide")
 
@@ -67,77 +66,9 @@ def calculate_and_display_results(
     Calculates and displays the required ingredients and machines.
     """
 
-    alt_recipes_dict = {}
-    for alt_recipe_name in alt_recipes_selected:
-        alt_recipe = recipe_loader.RECIPES[alt_recipe_name]
-        for alt_output in alt_recipe.outputs:
-            alt_recipes_dict[alt_output.item] = alt_recipe
+    
 
-    all_ingredients = []
-    all_machines = []
-
-    for output_item_name, output_amount in output_items:
-        item = recipe_loader.RECIPES[output_item_name].outputs[0].item  # Get the Item object
-        recipe = alt_recipes_dict.get(item, item.baseRecipes[0])
-
-        ingredients = []
-        machines = []
-        recipe_loader.get_ingredients(
-            item=item,
-            amount=output_amount,
-            recipe=recipe,
-            ingredients=ingredients,
-            machines=machines,
-            max_depth=6,
-            alt_recipes=alt_recipes_dict,
-        )
-
-        all_ingredients.extend(ingredients)
-        all_machines.extend(machines)
-
-    # Aggregate ingredients
-    aggregated_ingredients = defaultdict(float)
-    for item, amount in all_ingredients:
-            aggregated_ingredients[item] += amount
-
-    base_ingredients = defaultdict(float)
-    for item, amount in all_ingredients:
-        if(item._is_base_ingredient()):
-            base_ingredients[item] += amount
-
-    # Aggregate machines
-    aggregated_machines = defaultdict(lambda: (0, ""))
-    for machine, usage, recipe in all_machines:
-        aggregated_machines[recipe] = (
-            aggregated_machines[recipe][0] + usage,
-            machine,
-        )
-
-    total_machines = defaultdict(lambda: (0, 0))
-    for _, (usage, machine) in aggregated_machines.items():
-        total_machines[machine] = (
-            total_machines[machine][0] + math.ceil(usage),
-            total_machines[machine][1] + max(1, math.floor(usage)),
-        )
-
-    # --- Sort Results ---
-    sorted_ingredients = sorted(
-        aggregated_ingredients.items(), key=lambda item: (-item[1], item[0].itemName)
-    )  # Sort ingredients by amount (descending) then by name (ascending)
-
-    sorted_base_ingredients = sorted(
-        base_ingredients.items(), key=lambda item: (-item[1], item[0].itemName)
-    )  # Sort ingredients by amount (descending) then by name (ascending)
-
-
-    sorted_machines = sorted(
-        aggregated_machines.items(),
-        key=lambda item: (item[1][1].machineName, item[0].recipeName, item[1][0]),
-    )  # Sort machines by machine name, then recipe, then usage
-
-    sorted_total_machines = sorted(
-        total_machines.items(), key=lambda item: item[0].machineName
-    ) # Sort total machines by machine name
+    sorted_ingredients, sorted_base_ingredients, sorted_machines, sorted_total_machines = recipe_loader.calculate_and_display_results(output_items, alt_recipes_selected)
 
     # --- Display Results (Right Column) ---
     with ingredients_col:

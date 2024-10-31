@@ -1,64 +1,6 @@
-from dataclasses import dataclass
-from typing import  List, Tuple, Dict
-
-# Globals
-
-MACHINES: Dict[str, "Machine"] = {}
-ITEMS: Dict[str, "Item"] = {}
-
-@dataclass
-class ItemQuantity:
-    """
-    Represents a quantity of an item with an associated production rate.
-
-    Attributes:
-        item (Item): The item.
-        quantity (float): The quantity of the item.
-        rate (float): The production rate of the item (per minute).
-    """
-    item: "Item"
-    quantity: float
-    rate: float
-
-class Item:
-    """
-    Represents a Satisfactory item 
-
-    Attributes:
-        itemName (str): The name of the item.
-        baseRecipes (List[Recipe]): List of base recipes that produce this item.
-        altRecipes (List[Recipe]): List of alternative recipes that produce this item.
-    """
-    def __init__(self, itemName: str):
-        self.itemName: str = itemName
-        self.baseRecipes: List[Recipe] = []
-        self.altRecipes: List[Recipe] = []
-
-    def __str__(self) -> str:
-        return self.itemName
-    
-    def _is_base_ingredient(self):
-        return len(self.baseRecipes) == 0
-    
-    def __repr__(self) -> str:
-        return f"Item(itemName='{self.itemName}')" 
-
-class Machine:
-    """
-    Represents a Satisfactory machine
-
-    Attributes:
-        machineName (str): The name of the machine.
-    """
-    def __init__(self, machineName: str):
-        self.machineName: str = machineName
-
-    def __str__(self) -> str:
-        return self.machineName
-    
-    def __repr__(self) -> str:
-        return f"Machine(machineName='{self.machineName}')" 
-
+from typing import List, Tuple
+from .item import Item, ItemQuantity 
+from .machine import Machine
 
 class Recipe:
     """
@@ -72,10 +14,11 @@ class Recipe:
         inputs (List[ItemQuantity]): List of input item quantities.
         type (str): The type of the recipe ("base" or "alt").
     """
-    def __init__(self, recipeName: str, time: float, machineName: str, 
+    def __init__(self, recipeManager, recipeName: str, time: float, machineName: str, 
                  outputs: List[Tuple[str, float, float]], 
                  inputs: List[Tuple[str, float, float]], 
                  type: str):
+        self.recipeManager = recipeManager
         self.recipeName: str = recipeName
         self.time: float = time
         self.type: str = type
@@ -98,18 +41,18 @@ class Recipe:
 
     def _get_or_create_machine(self, machineName: str) -> Machine:
         """Retrieves a machine from MACHINES or creates a new one if it doesn't exist."""
-        machine = MACHINES.get(machineName)
+        machine = self.recipeManager.MACHINES.get(machineName)
         if not machine:
             machine = Machine(machineName=machineName)
-            MACHINES[machineName] = machine
+            self.recipeManager.MACHINES[machineName] = machine
         return machine
 
     def _get_or_create_item(self, itemName: str) -> Item:
         """Retrieves an item from ITEMS or creates a new one if it doesn't exist."""
-        item = ITEMS.get(itemName)
+        item = self.recipeManager.ITEMS.get(itemName)
         if not item:
             item = Item(itemName)
-            ITEMS[itemName] = item
+            self.recipeManager.ITEMS[itemName] = item
         return item
 
     def _add_recipe_to_items(self) -> None:
@@ -117,9 +60,9 @@ class Recipe:
         for output in self.outputs:
             item = output.item
             if item.itemName == self.recipeName and self.type != "alternate":
-                ITEMS[item.itemName].baseRecipes.append(self)
+                self.recipeManager.ITEMS[item.itemName].baseRecipes.append(self)
             else:
-                ITEMS[item.itemName].altRecipes.append(self)
+                self.recipeManager.ITEMS[item.itemName].altRecipes.append(self)
 
     def __str__(self) -> str:
         return f"Recipe: {self.recipeName}"
