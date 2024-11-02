@@ -233,6 +233,7 @@ class RecipeManager:
             return None, None, None
 
         output_ingredients = defaultdict(lambda: defaultdict(float)) 
+        output_non_base_ingreds = defaultdict(lambda: defaultdict(float)) 
         all_base_items = set()
         all_items = set()
         max_outputs = [max_output for _, _, max_output in output_items]
@@ -242,6 +243,7 @@ class RecipeManager:
             aggregated_ingredients, out_base_items, _, _ = \
                 self.calculate_and_display_results([(output_item, 1)], alt_recipes)
             output_ingredients[output_item] = out_base_items
+            output_non_base_ingreds[output_item] = aggregated_ingredients
             all_items.update(aggregated_ingredients.keys())
             all_base_items.update(out_base_items.keys())
 
@@ -250,36 +252,38 @@ class RecipeManager:
                     if self.ITEMS[item]._is_base_ingredient()]
         non_base_items = [(item, quantity) for item, quantity in items 
                         if not self.ITEMS[item]._is_base_ingredient()]
-
         # Calculate base ingredients for input items
         _, base_ingredients, _, _ = self.calculate_and_display_results(base_items, alt_recipes)
+        
         _, non_base_base_ingredients, _, _ = self.calculate_and_display_results(non_base_items, alt_recipes)
 
         # Calculate coefficients for the linear program
         coeffs = {}
         for out_item in output_ingredients:
-            coeffs[out_item] = [output_ingredients[out_item].get(item, 0) for item in all_base_items]
-
+            diffs = [(non_base[0], output_non_base_ingreds[out_item].get(self.ITEMS[non_base[0]], 0)) for non_base in non_base_items]
+            _, base, _, _ = self.calculate_and_display_results(diffs, alt_recipes)
+            coeffs[out_item] = [output_ingredients[out_item].get(item, 0) - base[item] for item in all_base_items]
         # Calculate total input amounts for each base item
         input_amounts = []
         for key in all_base_items:
             base_ingredients.setdefault(key, 0)
             non_base_base_ingredients.setdefault(key, 0)
             input_amounts.append(base_ingredients[key] + non_base_base_ingredients[key])
-
+        print(coeffs)
         # Calculate maximum production quantities (q)
         q = []
         modified_inputs = input_amounts.copy()
         for item, rates in coeffs.items():
             qs = [x_j / max(1e-10, a_ij) for x_j, a_ij in zip(input_amounts, rates)]
             q_i = min([x for x in qs if x > 0])
+            
             for i in range(len(input_amounts)):
                 if modified_inputs[i] == 0:
                     modified_inputs[i] = rates[i] * q_i
             q.append(q_i)
         # Objective function: Maximize weighted sum of output items
         c = [-1 for i in coeffs]  # Negate for maximization
-
+        print(modified_inputs)
         # Inequality constraints: a_{1j}q_1 + a_{2j}q_2 + ... + a_{nj}q_n <= x_j for all j
         A_ub = []
         b_ub = []
